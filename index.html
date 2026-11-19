@@ -1,6 +1,71 @@
-<!DOCTYPE HTML>
-<html>
-<script>location.href="https://www.youtube.com/c/ParhutadaohRizlySinaga"</script>
-</html>
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NMT Monitoring Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--ink:#17243a;--muted:#718096;--line:#e5ebf3;--blue:#2563eb;--green:#0f9d72;--red:#dc4c4c;--amber:#d18a13}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:14px/1.5 Inter,Segoe UI,Arial,sans-serif;color:var(--ink)}
+header{background:#102744;color:#fff;padding:24px max(20px,calc((100% - 1240px)/2));display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+h1{font-size:23px;margin:0 0 4px}header p{margin:0;color:#c7d5e7}.wrap{max-width:1240px;margin:24px auto;padding:0 18px}
+.panel,.metric{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 18px #18365a0a}
+.upload{padding:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}.upload strong{font-size:15px}.upload small{display:block;color:var(--muted)}
+button,.filelabel{border:0;border-radius:9px;padding:10px 15px;background:var(--blue);color:#fff;font-weight:600;cursor:pointer}.filelabel input{display:none}
+#filename{color:var(--muted)}.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0}
+.metric{padding:16px}.metric span{color:var(--muted);font-size:12px}.metric b{display:block;font-size:28px;margin-top:4px}.metric.open b{color:var(--red)}.metric.disc b{color:var(--amber)}.metric.closed b{color:var(--green)}
+.filters{padding:16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}select,input[type=search]{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff;color:var(--ink)}
+.tablehead{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;gap:12px;flex-wrap:wrap}.tablewrap{overflow:auto;border-top:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;min-width:950px}th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);white-space:nowrap}th{font-size:12px;color:var(--muted);background:#f9fbfe;position:sticky;top:0}td{font-size:13px}
+.pill{display:inline-block;border-radius:20px;padding:3px 9px;font-size:11px;font-weight:700}.p-open{background:#fff0f0;color:#c03939}.p-closed{background:#e8f7f0;color:#087a56}.p-disc{background:#fff5df;color:#a36a06}
+.empty{text-align:center;padding:35px;color:var(--muted)}.foot{color:var(--muted);font-size:12px;margin:14px 2px}.hide{display:none}
+@media(max-width:800px){.metrics{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(2,1fr)}header{padding:20px}.metric b{font-size:24px}}
+@media(max-width:460px){.filters{grid-template-columns:1fr}.metrics{gap:8px}.metric{padding:12px}}
+</style></head>
 <body>
-</body>
+<header><div><h1>NMT Monitoring Dashboard</h1><p>Monitoring tiket · Status System & PMU · Ticket aging</p></div><div id="status" style="font-size:12px;color:#c7d5e7">Belum ada data dimuat</div></header>
+<main class="wrap">
+<section class="panel upload"><div><strong>Masukkan file Excel hasil export NMT</strong><small>File dibaca langsung di browser ini dan tidak diunggah ke server.</small></div><label class="filelabel">Pilih File Excel<input id="file" type="file" accept=".xlsx,.xls,.csv"></label><span id="filename">Belum ada file dipilih</span></section>
+<section class="metrics">
+<div class="metric"><span>Total tiket</span><b id="total">0</b></div>
+<div class="metric open"><span>OPEN · System</span><b id="sysopen">0</b></div>
+<div class="metric open"><span>OPEN · PMU</span><b id="pmuopen">0</b></div>
+<div class="metric disc"><span>Discrepancy</span><b id="discrepancy">0</b></div>
+<div class="metric closed"><span>Sudah CLOSED keduanya</span><b id="closed">0</b></div>
+</section>
+<section class="panel filters">
+<div><label for="province">Provinsi</label><select id="province"><option value="">Semua provinsi</option></select></div>
+<div><label for="district">Kabupaten</label><select id="district"><option value="">Semua kabupaten</option></select></div>
+<div><label for="statusFilter">Kategori tiket</label><select id="statusFilter"><option value="">Semua kategori</option><option value="OPEN">Masih OPEN</option><option value="CLOSED">Sudah CLOSED keduanya</option><option value="DISCREPANCY">Discrepancy</option></select></div>
+<div><label for="search">Cari tiket / site / lokasi</label><input id="search" type="search" placeholder="Ketik kata kunci..."></div>
+</section>
+<section class="panel">
+<div class="tablehead"><strong>Daftar tiket</strong><span id="shown" style="color:var(--muted)">0 data</span></div>
+<div class="tablewrap"><table><thead><tr><th>Ticket ID</th><th>Site ID</th><th>Nama Lokasi</th><th>Provinsi</th><th>Kabupaten</th><th>Status System</th><th>Status PMU</th><th>Durasi (hari)</th><th>Ticket Aging (hari)</th><th>Downtime (hari)</th></tr></thead><tbody id="tbody"><tr><td colspan="10" class="empty">Silakan pilih file Excel export NMT.</td></tr></tbody></table></div>
+</section>
+<p class="foot">Catatan: OPEN duration dihitung dari Date Start sampai hari ini. Untuk CLOSED, tanggal selesai dan kolom aging/downtime asli dari NMT dipertahankan. Discrepancy berarti status System dan PMU berbeda.</p>
+</main>
+<script>
+let rows=[];
+const $=id=>document.getElementById(id);
+const aliases={
+ticket:['ticket id','ticket_id','id tiket','ticket no'],site:['site id','site_id','site uniq id'],name:['nama lokasi','site name','location name','lokasi'],province:['provinsi','province'],district:['kabupaten','kabupaten/kota','district','regency'],start:['date start','start date','tanggal mulai'],end:['date end','end date','tanggal selesai'],aging:['ticket aging (days)','ticket aging','aging'],down:['downtime (days)','downtime'],system:['status by system','status system','system status'],pmu:['status by pmu','status pmu','pmu status']};
+function norm(s){return String(s??'').trim().toLowerCase().replace(/[_-]/g,' ').replace(/\s+/g,' ')}
+function val(o,key){let k=Object.keys(o).find(x=>aliases[key].includes(norm(x)));return k?o[k]:''}
+function dateVal(v){if(v instanceof Date)return v;if(typeof v==='number'){let d=XLSX.SSF.parse_date_code(v);if(d)return new Date(d.y,d.m-1,d.d)}if(v){let d=new Date(v);if(!isNaN(d))return d}return null}
+function days(a,b){let x=dateVal(a),y=dateVal(b);return x&&y?Math.max(0,Math.floor((y-x)/86400000)):''}
+function fmt(v){return v===null||v===undefined?'':String(v)}
+function status(v){return norm(v).toUpperCase()}
+function category(r){let s=status(r.system),p=status(r.pmu);if(s!==p)return'DISCREPANCY';if(s.includes('OPEN')||p.includes('OPEN'))return'OPEN';return'CLOSED'}
+function loadData(data){rows=data.map(o=>{let start=val(o,'start'),end=val(o,'end'),sys=val(o,'system'),pmu=val(o,'pmu');let r={ticket:val(o,'ticket'),site:val(o,'site'),name:val(o,'name'),province:val(o,'province'),district:val(o,'district'),start,end,aging:val(o,'aging'),down:val(o,'down'),system:sys,pmu};let elapsed=days(start,(status(sys)==='OPEN'||status(pmu)==='OPEN')?new Date():end);r.duration=elapsed;return r}).filter(r=>Object.values(r).some(v=>v!==''&&v!==null));$('filename').textContent=rows.length+' baris berhasil dibaca';$('status').textContent='Data dimuat · '+new Date().toLocaleString('id-ID');populate();render()}
+function populate(){for(let id of ['province','district']){let key=id==='province'?'province':'district',sel=$(id),old=sel.value,vals=[...new Set(rows.map(r=>fmt(r[key])).filter(Boolean))].sort();sel.innerHTML='<option value="">'+(id==='province'?'Semua provinsi':'Semua kabupaten')+'</option>'+vals.map(v=>'<option>'+escapeHtml(v)+'</option>').join('');sel.value=old}}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){let filtered=rows.filter(r=>(!$('province').value||r.province===$('province').value)&&(!$('district').value||r.district===$('district').value)&&(!$('statusFilter').value||category(r)===$('statusFilter').value)&&(! $('search').value||[r.ticket,r.site,r.name,r.province,r.district].join(' ').toLowerCase().includes($('search').value.toLowerCase())));
+let sys=filtered.filter(r=>status(r.system)==='OPEN').length,pmu=filtered.filter(r=>status(r.pmu)==='OPEN').length,disc=filtered.filter(r=>category(r)==='DISCREPANCY').length,closed=filtered.filter(r=>category(r)==='CLOSED').length;
+$('total').textContent=filtered.length.toLocaleString('id-ID');$('sysopen').textContent=sys.toLocaleString('id-ID');$('pmuopen').textContent=pmu.toLocaleString('id-ID');$('discrepancy').textContent=disc.toLocaleString('id-ID');$('closed').textContent=closed.toLocaleString('id-ID');$('shown').textContent=filtered.length+' data';
+$('tbody').innerHTML=filtered.length?filtered.map(r=>'<tr><td>'+escapeHtml(r.ticket)+'</td><td>'+escapeHtml(r.site)+'</td><td>'+escapeHtml(r.name)+'</td><td>'+escapeHtml(r.province)+'</td><td>'+escapeHtml(r.district)+'</td><td>'+pill(r.system)+'</td><td>'+pill(r.pmu)+'</td><td>'+fmt(r.duration)+'</td><td>'+fmt(r.aging)+'</td><td>'+fmt(r.down)+'</td></tr>').join(''):'<tr><td colspan="10" class="empty">Tidak ada tiket sesuai filter.</td></tr>'}
+function pill(v){let s=status(v),cl=s==='OPEN'?'p-open':s==='CLOSED'?'p-closed':'p-disc';return '<span class="pill '+cl+'">'+escapeHtml(v||'-')+'</span>'}
+$('file').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;$('filename').textContent='Membaca '+f.name+'...';try{let buf=await f.arrayBuffer(),wb=XLSX.read(buf,{type:'array',cellDates:true});let ws=wb.Sheets[wb.SheetNames[0]],data=XLSX.utils.sheet_to_json(ws,{defval:''});if(!data.length)throw Error('Sheet kosong');loadData(data)}catch(err){$('filename').textContent='Gagal membaca file: '+err.message}});
+['province','district','statusFilter','search'].forEach(id=>$(id).addEventListener('input',render));
+</script></body></html>
